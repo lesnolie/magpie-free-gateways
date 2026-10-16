@@ -29,6 +29,7 @@ export async function KiloFreeAllPlugin(_input, options = {}) {
   const discovery = createDiscovery({
     initial,
     ttlMs: options.ttlMs ?? 30_000,
+    now: options.now ?? Date.now,
     load: async () => buildKiloModels(await readRemote(listURL, { fetchImpl }), baseURL),
   });
 

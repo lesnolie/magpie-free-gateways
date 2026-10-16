@@ -2,16 +2,18 @@
 // successful catalog read, so an outage cannot turn a stale free price into a call.
 export function createDiscovery({ load, initial = {}, ttlMs = 30_000, now = Date.now }) {
   let current = initial;
-  let verifiedAt = 0;
+  let verifiedAt;
   let pending;
 
   async function refresh(force = false) {
-    if (!force && verifiedAt && now() - verifiedAt < ttlMs) return current;
+    if (!force && verifiedAt !== undefined && now() - verifiedAt < ttlMs) return current;
     if (pending) return pending;
     pending = (async () => {
       const next = await load();
-      if (!next || typeof next !== "object" || !Object.keys(next).length)
-        throw new Error("The live catalog returned no eligible free models");
+      // An empty, successfully read catalog means there are no free models.
+      // A failed read throws in load() and keeps the last display list.
+      if (!next || typeof next !== "object" || Array.isArray(next))
+        throw new Error("Invalid live free-model catalog");
       current = next;
       verifiedAt = now();
       return current;
@@ -31,7 +33,8 @@ export function createDiscovery({ load, initial = {}, ttlMs = 30_000, now = Date
       try {
         return await refresh();
       } catch {
-        if (!Object.keys(current).length) throw new Error("Free model discovery failed with no cached list");
+        if (verifiedAt === undefined && !Object.keys(current).length)
+          throw new Error("Free model discovery failed with no cached list");
         const fallback = { ...current };
         fallback[Symbol.for("magpie.fellBack")] = true;
         return fallback;

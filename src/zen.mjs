@@ -9,6 +9,7 @@ import {
   buildZenModels,
   toConfigModels,
   parseZenProtocols,
+  zenZeroCost,
 } from "./models.mjs";
 import { createDiscovery, readRemote } from "./discovery.mjs";
 import { collapseResponse } from "./stream.mjs";
@@ -21,6 +22,7 @@ const CATALOG = "https://models.opencode.ai/api.json";
 const DOCS =
   "https://raw.githubusercontent.com/anomalyco/opencode/dev/services/www/src/docs/content/console/models.mdx";
 const SDK = { chat: CHAT_SDK, responses: RESPONSES_SDK, anthropic: ANTHROPIC_SDK };
+const SDK_PROTOCOL = Object.fromEntries(Object.entries(SDK).map(([protocol, npm]) => [npm, protocol]));
 const PATHS = { chat: "/chat/completions", responses: "/responses", anthropic: "/messages", systemone: "/systemone" };
 const UPSTREAM = {
   chat: "https://opencode.ai/inference/openai/v1/chat/completions",
@@ -179,21 +181,34 @@ async function server(_input, options = {}) {
     { data: zenSnapshot.models }, { models: { "big-pickle": { cost: { input: 0, output: 0 } } } },
     Object.fromEntries(zenSnapshot.models.map((model) => [model.id, model.protocol])), baseURL,
   );
-  let metadata = { models: {} };
-  let protocols = Object.fromEntries(zenSnapshot.models.map((model) => [model.id, model.protocol]));
-  const discovery = createDiscovery({ initial, ttlMs: options.ttlMs ?? 30_000, load: async () => {
+  let documentedProtocols = Object.fromEntries(zenSnapshot.models.map((model) => [model.id, model.protocol]));
+  let sdkProtocols = {};
+  let previouslyCharged = new Set();
+  const discovery = createDiscovery({ initial, ttlMs: options.ttlMs ?? 30_000, now: options.now ?? Date.now, load: async () => {
     const headers = { authorization: "Bearer public", "x-opencode-client": "cli" };
     const [listing, catalog, docs] = await Promise.allSettled([
       readRemote(listingURL, { headers, fetchImpl }),
       readRemote(catalogURL, { fetchImpl }),
       readRemote(docsURL, { as: "text", fetchImpl }),
     ]);
-    if (catalog.status === "fulfilled" && catalog.value?.opencode?.models) {
-      metadata = catalog.value.opencode;
+    // Never reuse old prices: an unpriced ID such as big-pickle needs
+    // a zero-cost record from this refresh before any request is sent.
+    const metadata = catalog.status === "fulfilled" && catalog.value?.opencode?.models
+      ? catalog.value.opencode : { models: {} };
+    if (catalog.status === "fulfilled" && metadata === catalog.value?.opencode) {
+      for (const [id, raw] of Object.entries(metadata.models)) {
+        if (raw?.cost) {
+          if (zenZeroCost(raw.cost)) previouslyCharged.delete(id);
+          else previouslyCharged.add(id);
+        }
+        if (raw?.provider?.npm)
+          sdkProtocols[id] = SDK_PROTOCOL[raw.provider.npm] ?? "unsupported";
+      }
     }
-    if (docs.status === "fulfilled") protocols = { ...protocols, ...parseZenProtocols(docs.value) };
+    if (docs.status === "fulfilled") documentedProtocols = { ...documentedProtocols, ...parseZenProtocols(docs.value) };
     if (listing.status !== "fulfilled") throw listing.reason;
-    return buildZenModels(listing.value, metadata, protocols, baseURL);
+    return buildZenModels(listing.value, metadata, { ...sdkProtocols, ...documentedProtocols },
+      baseURL, previouslyCharged);
   }});
 
   return {

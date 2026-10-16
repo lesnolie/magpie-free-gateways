@@ -47,3 +47,9 @@
 `dots-studio/dots-3-note-preview:free` 的流式请求返回 200、24 个 SSE 事件并以 `[DONE]` 结束。Kilo 默认匿名请求未发送 `Authorization` 头。已验证可选 Key 路径在本地测试中转发给上游；没有使用真实个人 Key 做外部请求。
 
 自动化测试还验证：转付费或从实时目录移除的模型被拒绝，目录不可达时展示缓存但拒绝未经近期核验的推理，并发刷新合并，缓存到期再次刷新；Jev 请求不注入聊天工具或流参数，聊天请求会被拒绝。动态目录可列出模型，但上游限流、登录要求与实际生成能力由各网关决定。
+
+## 0.1.1 自动同步增量验证
+
+2026-10-16 使用可变的模拟上游和可控时钟，沿两个真实 `provider.models` 钩子及 `loader.fetch` 路径验证：新免费模型自动出现，移除与转收费后被拒绝；成功空目录清空列表；目录失败可回退展示但拒绝推理。Zen 补充元数据失败时，新普通 `-free` 模型仍可走默认 Chat Completions；明确的其他 SDK 和未知 Jev 不会错路由。已确认收费的模型即使后来元数据请求失败或成功响应漏掉该 ID，仍须等明确零价记录才恢复；无免费后缀模型不会沿用旧零价。`npm test` 共 10 项通过。
+
+自动重列时机依据 Magpie 官方源码提交 [`a15e576`](https://github.com/yetone/magpie/commit/a15e576564cb90d4d027e8b8cb7821472de0a3fc)：[首次约 1 分钟、随后每小时](https://github.com/yetone/magpie/blob/a15e576564cb90d4d027e8b8cb7821472de0a3fc/internal/provider/plugin_relist.go#L22-L67)，由[网关后台任务](https://github.com/yetone/magpie/blob/a15e576564cb90d4d027e8b8cb7821472de0a3fc/internal/gateway/gateway.go#L560)执行。本次没有重跑 0.1.0 的逐模型在线请求；本节为本地端到端模拟验证，在线服务的即时状态未重新验证。

@@ -71,18 +71,18 @@ export function isZeroPricing(pricing) {
   return Object.entries(pricing).every(([key, value]) => key === "discount" || zeroNumber(value));
 }
 
-function zenZeroCost(cost) {
+export function zenZeroCost(cost) {
   if (!cost || !zeroNumber(cost.input) || !zeroNumber(cost.output)) return false;
   return Object.values(cost).every((value) => zeroNumber(value));
 }
 
-export function buildZenModels(listing, metadata = {}, protocols = {}, baseURL = ZEN_BASE) {
+export function buildZenModels(listing, metadata = {}, protocols = {}, baseURL = ZEN_BASE, blockedIDs = new Set()) {
   if (!Array.isArray(listing?.data)) throw new Error("Invalid OpenCode model list");
   const fallback = Object.fromEntries(zenSnapshot.models.map((model) => [model.id, model]));
   const result = {};
   for (const entry of listing.data) {
     const id = entry?.id;
-    if (typeof id !== "string" || !id || id === "__proto__" || id === "test") continue;
+    if (typeof id !== "string" || !id || id === "__proto__" || id === "test" || blockedIDs.has(id)) continue;
     const raw = metadata.models?.[id];
     const known = fallback[id];
     const cost = raw?.cost;
@@ -90,12 +90,18 @@ export function buildZenModels(listing, metadata = {}, protocols = {}, baseURL =
     // A nonzero catalog price always overrides a free-looking model name.
     if (cost && !zenZeroCost(cost)) continue;
     if (!namedFree && !zenZeroCost(cost)) continue;
+    // Jev uses System One. A newly listed Jev cannot be routed safely
+    // until the live endpoint documentation identifies its protocol.
+    if (id.startsWith("jev-") && !protocols[id] && known?.protocol !== "systemone") continue;
     const npm = raw?.provider?.npm ?? metadata.npm;
     const protocol = protocols[id] ?? known?.protocol ??
       (npm === RESPONSES_SDK ? "responses" :
         npm === ANTHROPIC_SDK ? "anthropic" :
-          npm === CHAT_SDK ? "chat" : undefined);
-    if (!protocol) continue;
+          npm === CHAT_SDK ? "chat" :
+            // Zen's provider default is OpenAI-compatible Chat Completions.
+            // A new Jev ID needs an explicit System One route before use.
+            npm || id.startsWith("jev-") ? undefined : "chat");
+    if (!protocol || !["chat", "responses", "anthropic", "systemone"].includes(protocol)) continue;
     const decides = protocol === "systemone";
     const input = raw?.modalities?.input ?? known?.modalities?.input ?? ["text"];
     const output = raw?.modalities?.output ?? known?.modalities?.output ?? ["text"];
