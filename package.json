@@ -1,6 +1,6 @@
 {
   "name": "magpie-free-gateways",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": false,
   "type": "module",
   "main": "./index.mjs",
@@ -16,5 +16,8 @@
     "check": "node --check index.mjs && node --test"
   },
   "engines": { "node": ">=20" },
-  "magpie": { "maxConcurrency": 2 }
+  "magpie": {
+    "maxConcurrency": 2,
+    "icon": "https://avatars.githubusercontent.com/u/81410185?v=4"
+  }
 }
