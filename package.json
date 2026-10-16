@@ -1,0 +1,20 @@
+{
+  "name": "magpie-free-gateways",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "main": "./index.mjs",
+  "description": "Live free-model discovery for OpenCode Zen and Kilo Gateway in Magpie",
+  "keywords": ["magpie", "opencode", "opencode-plugin", "provider", "free-models"],
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/lesnolie/magpie-free-gateways.git" },
+  "homepage": "https://github.com/lesnolie/magpie-free-gateways#readme",
+  "bugs": "https://github.com/lesnolie/magpie-free-gateways/issues",
+  "files": ["index.mjs", "src/", "README.md", "VERIFICATION.md", "LICENSE", "NOTICE.md"],
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check index.mjs && node --test"
+  },
+  "engines": { "node": ">=20" },
+  "magpie": { "maxConcurrency": 2 }
+}
