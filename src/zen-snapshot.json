@@ -1,6 +1,6 @@
 {
   "source": "https://opencode.ai/inference/v1/models + https://models.opencode.ai/api.json + OpenCode Console endpoint table",
-  "captured_at": "2026-10-17",
+  "captured_at": "2026-10-16",
   "models": [
     {
       "id": "big-pickle",
@@ -28,12 +28,12 @@
       "upstream_status": "active"
     },
     {
-      "id": "beam-free",
-      "name": "Beam Free",
+      "id": "cat-jam-free",
+      "name": "Cat Jam Free",
       "protocol": "chat",
       "limit": {
-        "context": 32768,
-        "output": 4096
+        "context": 1048576,
+        "output": 131072
       },
       "modalities": {
         "input": [
@@ -43,10 +43,23 @@
           "text"
         ]
       },
-      "reasoning": false,
-      "tool_call": false,
-      "interleaved": false,
-      "reasoning_options": [],
+      "reasoning": true,
+      "tool_call": true,
+      "interleaved": {
+        "field": "reasoning_content"
+      },
+      "reasoning_options": [
+        {
+          "type": "effort",
+          "values": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ]
+        }
+      ],
       "upstream_status": "active"
     },
     {
@@ -74,6 +87,80 @@
         "field": "reasoning_content"
       },
       "reasoning_options": [],
+      "upstream_status": "active"
+    },
+    {
+      "id": "muse-spark-1.2-contributor-free",
+      "name": "Muse Spark 1.2 Free",
+      "protocol": "responses",
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf",
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "reasoning": true,
+      "tool_call": true,
+      "interleaved": false,
+      "reasoning_options": [
+        {
+          "type": "effort",
+          "values": [
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ]
+        }
+      ],
+      "upstream_status": "deprecated"
+    },
+    {
+      "id": "muse-spark-1.3-contributor-free",
+      "name": "Muse Spark 1.3 Free",
+      "protocol": "responses",
+      "limit": {
+        "context": 1048576,
+        "output": 131072
+      },
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "video",
+          "pdf",
+          "audio"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "reasoning": true,
+      "tool_call": true,
+      "interleaved": false,
+      "reasoning_options": [
+        {
+          "type": "effort",
+          "values": [
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ]
+        }
+      ],
       "upstream_status": "active"
     },
     {
@@ -221,28 +308,6 @@
           ]
         }
       ],
-      "upstream_status": "active"
-    },
-    {
-      "id": "glm-5.3-flash-free",
-      "name": "GLM-5.3-Flash Free",
-      "protocol": "chat",
-      "limit": {
-        "context": 32768,
-        "output": 4096
-      },
-      "modalities": {
-        "input": [
-          "text"
-        ],
-        "output": [
-          "text"
-        ]
-      },
-      "reasoning": false,
-      "tool_call": false,
-      "interleaved": false,
-      "reasoning_options": [],
       "upstream_status": "active"
     },
     {

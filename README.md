@@ -10,39 +10,29 @@ magpie plugin login zen-free-all
 magpie plugin login kilo-free-all
 ```
 
-也可下载仓库后运行 `magpie plugin add ./magpie-free-gateways`。Zen 可以选择匿名 `public`，或使用自己从 [OpenCode Console](https://opencode.ai/console) 获取的正式 API Key（是否允许免费模型、是否计费均由官方接口决定）；匿名免费模型的目录可显示，并**不代表 Magpie 有权调用**。若服务端返回 `FreeTierError`（只能在 OpenCode 中使用），插件会明确提示官方客户端限制，而不会尝试绕过。Kilo 选择“匿名免费访问”并填 `anonymous`；插件不会把这个占位值发给 Kilo。Kilo 也可选择自己的 API Key，插件只允许实时目录中所有价格字段为零的模型通过。密钥由 Magpie 管理，插件不写入日志。
+也可下载仓库后运行 `magpie plugin add ./magpie-free-gateways`。Zen 登录界面填 `public`，插件只接受公开凭据。Kilo 选择“匿名免费访问”并填 `anonymous`；插件不会把这个占位值发给 Kilo。Kilo 也可选择自己的 API Key，插件只允许实时目录中所有价格字段为零的模型通过。密钥由 Magpie 管理，插件不写入日志。
 
 两个供应商分别是 `zen-free-all/<模型 ID>` 和 `kilo-free-all/<模型 ID>`。它们不会覆盖已有的 `opencode-zen-free` 供应商。安装后可用 `magpie plugin --json` 查看加载状态、模型和登录方式；模型是否显示在某个代理的选择器中，还取决于该代理在 Magpie 的可见模型设置。
 
 ## OpenCode Zen
 
-以下表格记录 **2026-10-17** 的 10 个 Zen 免费模型，后续可能变化。仓库的定时 GitHub Action 会更新 `src/zen-snapshot.json`；Magpie 登录后的实时目录刷新也会自动增删，发送请求前仍须核验当前的零价格与模型可用性。因此表格只是历史示例，并非永久固定名单。
+2026-10-16 的实时目录列出以下 11 个免费模型。模型 ID 以实时目录为准，列表可变。
 
 | 模型 ID | 接口 |
 | --- | --- |
 | `big-pickle` | Chat Completions |
-| `beam-free` | Chat Completions |
+| `cat-jam-free` | Chat Completions |
 | `mimo-v2.6-flash-free` | Chat Completions |
+| `muse-spark-1.2-contributor-free` | Responses |
+| `muse-spark-1.3-contributor-free` | Responses |
 | `nemotron-3.5-super-vl-free` | Chat Completions |
 | `nemotron-3.5-lightning-free` | Chat Completions |
 | `jev-1.13-free` | System One 决策 |
 | `longcat-2.5-preview-free` | Chat Completions |
 | `deepseek-v4.1-flash-free` | Chat Completions |
-| `glm-5.3-flash-free` | Chat Completions |
 | `space-bunny-free` | Chat Completions |
 
-本次移除了初始快照中已不在实时目录的 `cat-jam-free`、`muse-spark-1.2-contributor-free` 和 `muse-spark-1.3-contributor-free`，新增 `beam-free`、`glm-5.3-flash-free`。`big-pickle` 无 `-free` 后缀，仍必须在每次目录刷新时获得**明确的零价格证据**才能发起请求。新模型的能力与上下文上限以实时元数据为准，离线快照不代表真实测试结果。
-
-**OpenCode 版本分支：** 2026-10-17 时，OpenCode 1.x 的最新正式版为 `opencode-ai@1.19.3`，OpenCode 2.x 是独立的大版本线（`@opencode/cli@2.0.31`）。本仓库是 **Magpie 供应商插件**，并不是 OpenCode 原生插件，不会安装、升级或自动调用 OpenCode 2。当前发送逻辑沿用经先前验证的 1.x HTTP 请求兼容层；**不能仅凭版本字符串变更就声称 OpenCode 2.x 的全部协议和鉴权路径已通过测试**。Zen 免费接口可能根据客户端身份、能力与工具定义限制访问，请遵守服务条款。若需要正式支持 OpenCode 2，请单独验证其原生插件宿主和 Console API 认证机制。
-
-
-### Zen 免费层限制与正式 API Key
-
-如果在 Magpie「检测模型」或 Agent 请求中出现 `OpenCode's free tier can only be used from within OpenCode`，这是 OpenCode 网关返回的 **HTTP 403 `FreeTierError`**，不属于模型没有同步。此限制由服务端决定；更换请求头、更新本插件或把 User-Agent 改为最新 OpenCode 并不等同于获得访问权限。
-
-合法选项：使用真正的 OpenCode 客户端调用它允许的匿名免费模型；若要在 Magpie 中使用官方 Console API，请在此插件的 Zen 登录中选择 **官方 Console API Key**，由 Magpie 存储你的 Key，插件只发往 OpenCode Console 的推理端点。官方文档说明 Console API 可用于第三方编码代理，但**正式 Key 也不能保证每个免费模型允许第三方使用**，并可能依据账户或请求产生费用。插件依然只列出实时确认零标价的模型，转发前再次校验目录。若拒绝继续发生，应使用官方客户端或改用 Kilo 等允许外部 API 调用的网关；不要绕过访问控制。
-
-此模式可与匿名 `public` 模式共存，但切换/新增登录需要在 Magpie 内选择对应方式。原有 `public` 登录不会自动变成正式 API Key。没有已授权的 Console API Key 时，本仓库无法保证 Zen 免费模型在 Magpie 中可用。
+Zen 的实时模型目录仍列出 Muse Spark 1.2，虽然补充元数据标为 `deprecated`。本插件以实时目录为准，把这个仍在目录内的免费模型呈给 Magpie；上游若移除它，插件随刷新移除。`big-pickle` 没有 `-free` 后缀，但补充目录确认输入、输出及缓存价格为零，所以允许它。
 
 ### 使用 Jev
 
@@ -89,23 +79,13 @@ Kilo 官方说明免费模型允许匿名访问，按 IP 每小时 200 次请求
 
 已登录供应商的 `provider.models` 钩子被 Magpie 调用时，插件读取实时目录。根据 [Magpie 当前的刷新实现](https://github.com/yetone/magpie/blob/a15e576564cb90d4d027e8b8cb7821472de0a3fc/internal/provider/plugin_relist.go#L22-L67)，运行中的网关约在启动 1 分钟后首次重新读取插件目录，之后每小时读取一次；登录、插件变更或手动刷新也会触发读取。插件缓存 30 秒，用于合并密集的目录查询和推理前核验，**不是每 30 秒主动刷新界面**。自动重列由 [Magpie 网关启动的后台任务](https://github.com/yetone/magpie/blob/a15e576564cb90d4d027e8b8cb7821472de0a3fc/internal/gateway/gateway.go#L560)完成；代理的模型选择器仍受 Magpie 可见模型设置和刷新时机影响。
 
-目录请求超时 8 秒，同时触发的刷新合并为一次请求。成功读取空目录表示当前没有符合条件的免费模型，插件会清空所列模型。请求失败时，Magpie 可继续展示上次列表或仓库内 Zen 2026-10-17 / Kilo 2026-10-16 的离线快照；**发送推理请求前必须成功读取近期实时目录**。某个模型已移除、变为收费，或目录无法确认时，插件拒绝转发请求。即使 Magpie 保留了已选模型，插件也不会把未经核验的请求发往上游。离线快照只用于启动展示，不作为付费安全判断。
+目录请求超时 8 秒，同时触发的刷新合并为一次请求。成功读取空目录表示当前没有符合条件的免费模型，插件会清空所列模型。请求失败时，Magpie 可继续展示上次列表或仓库内 2026-10-16 的离线快照；**发送推理请求前必须成功读取近期实时目录**。某个模型已移除、变为收费，或目录无法确认时，插件拒绝转发请求。即使 Magpie 保留了已选模型，插件也不会把未经核验的请求发往上游。离线快照只用于启动展示，不作为付费安全判断。
 
 Zen 的实时模型 ID 列表是是否开放免费模型的依据；补充目录提供价格、能力、上下文长度和接口协议。带 `-free` 的新普通模型在补充目录暂时不可用时按 Zen 默认的 Chat Completions 接口接入；明确标注其他不支持接口的模型不会错送到聊天接口。新 Jev 模型需有明确的 System One 接口信息才能接入。已确认非零价的模型持续被拒绝，直到补充目录明确恢复零价；`big-pickle` 等无 `-free` 后缀的模型每次刷新都需要当次零价证据。Kilo 同时检查输入、输出、请求、图片、缓存、联网和其他可见收费字段；任一非零就排除。动态列表只代表网关当前声明的免费可用性，**不保证每个上游推理请求都成功**，也不保证未来不变。模型自身的限流、服务错误或接口能力差异仍会影响请求。
 
 本插件在 Magpie 插件宿主内通过 `fetch` 发请求，不启动外部程序或绕过 TLS 校验。Zen 的聊天、Responses 协议保留现有社区插件的工具与流处理；Kilo 使用 Chat Completions 原样透传。未经测试的输出形式和上游能力不作保证。
 
 2026-10-16 的逐模型实测状态、匿名认证与流式请求结果见 [验证报告](VERIFICATION.md)。
-
-## 自动同步 OpenCode（GitHub Actions）
-
-`.github/workflows/sync-opencode.yml` 每 **6 小时**检查一次，也可在仓库 **Actions → Sync OpenCode upstream → Run workflow** 手动触发。脚本为 `scripts/sync-opencode.mjs`，检查官方 npm 的 OpenCode 1.x / 2.x 版本及 Zen `/models` 和模型定价元数据，并只将**实时确认全部费用为零且协议已知**的模型写入离线快照。没有变更时不提交；上游不可用或价格资料不可信时安全失败，不会覆盖已知目录。
-
-发现变化后，在 `automation/opencode-upstream` 分支创建或更新 PR，先运行 `npm run check`；**默认不自动合并**，需要代码审核。OpenCode 2.x 仅跟踪版本号，不能把 SDK 或请求协议自动“升级”为已兼容。Github Actions 的 `GITHUB_TOKEN` 创建 PR 需要仓库设置中允许 Actions 创建 Pull Requests；`GITHUB_TOKEN` 触发的 PR 可能不会自动启动其他 workflow，因此同步 workflow 自己先运行测试。
-
-**诊断无法调用的模型：** `scripts/diagnose-gateways.mjs` 分别用不含个人 Key 的公开 Zen 与 Kilo 免费访问方式发一个最小请求，打印 HTTP 状态和短错误文本。可以通过 **Actions → Diagnose free gateways → Run workflow** 手动运行，不必在日志中公开任何个人 API Key。诊断结果能区分上游 403 免费层客户端限制、401 身份验证、429 限流、503 目录校验失败等，不代表每种上游模型都可靠。
-
-特别注意，Zen 的免费层可能限制**官方 OpenCode 客户端内的使用**。本仓库是 Magpie 的第三方插件，单纯更新 `opencode/X.Y.Z` 的 User-Agent 或模型目录**不等于获得官方免费推理授权**。如果 Zen 因 `FreeTierError` 返回 403，应尊重服务端限制，改用官方 OpenCode 客户端访问对应免费模型，或在 Magpie 中使用明确允许第三方调用的提供商（例如 Kilo 的公开免费 API）。不要把识别限制视为需要绕过的 bug。
 
 ## 开发与许可
 

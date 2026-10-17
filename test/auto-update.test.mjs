@@ -10,8 +10,7 @@ test("Zen hooks add, remove and reprice live models; stale prices cannot authori
   let clock = 0;
   let listing = ["jev-1.13-free", "muse-spark-1.3-contributor-free", "big-pickle"];
   let costs = { "big-pickle": zero };
-  // Synthetic Responses fixture; the model is no longer in the live catalog.
-  let otherMetadata = { "muse-spark-1.3-contributor-free": { provider: { npm: "@ai-sdk/openai" } } };
+  let otherMetadata = {};
   let listingFails = false;
   let metadataFails = false;
   const posts = [];
@@ -28,7 +27,7 @@ test("Zen hooks add, remove and reprice live models; stale prices cannot authori
           .map((id) => [id, { ...(costs[id] ? { cost: costs[id] } : {}), ...otherMetadata[id] }])),
       } });
     }
-    if (!init.method && url.endsWith("models.mdx")) return new Response("| Jev | jev-1.13-free | `https://opencode.ai/inference/systemone/v1/systemone` | - |\n");
+    if (!init.method && url.endsWith("models.mdx")) throw new Error("docs offline");
     posts.push(url);
     throw new Error("posted to upstream");
   };
