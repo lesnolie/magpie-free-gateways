@@ -122,6 +122,11 @@ test("official Console API key can authenticate via third-party Magpie provider"
   }
   assert.equal(calls.length, 3);
   for (const call of calls) {
+    if (new URL(call.url).pathname.endsWith("/chat/completions") ||
+        new URL(call.url).pathname.endsWith("/responses")) {
+      const body = JSON.parse(call.init.body);
+      assert.equal(body.tools, undefined, "no fabricated CLI tool definitions with Console API key");
+    }
     const h = new Headers(call.init.headers);
     assert.equal(h.has("x-api-key") ? h.get("x-api-key") : h.get("authorization"),
       h.has("x-api-key") ? auth.key : "Bearer " + auth.key);
