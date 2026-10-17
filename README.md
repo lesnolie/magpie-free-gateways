@@ -4,6 +4,8 @@
 
 ## 安装和登录
 
+> ⚠️ **OpenCode Zen `public` 免费通道：代理出口 IP 可能被封禁。** 使用 VPN、网络代理或云服务器中转（尤其 AWS 等数据中心出口 IP）访问时，Zen / Cloudflare 等上游风控可能直接拦截该**出口 IP**，返回 HTTP 403 等拒绝响应。**即使只有一个人在使用该 IP、调用量很少，也不能据此认为不会被拦截。** 建议在服务支持的地区**关闭代理，优先使用本地网络直连**，并确认 Magpie 实际使用的出口网络，而不只是浏览器的网络设置。是否封禁、封禁范围及具体判定规则由上游决定，目前不能确认「所有 AWS IP 必然封禁」；直连也不保证解除既有限制。切勿通过频繁更换 IP 绕过服务端限制。
+
 ```sh
 magpie plugin add github:lesnolie/magpie-free-gateways
 magpie plugin login zen-free-all
