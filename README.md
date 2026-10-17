@@ -16,7 +16,7 @@ magpie plugin login kilo-free-all
 
 ## OpenCode Zen
 
-2026-10-17 核对 [OpenCode Console 官方模型目录](https://opencode.ai/v2/docs/console/models/) 和实时 `/inference/v1/models` 后，Zen 目前列出以下 **10 个免费模型**。这是启动时的离线快照，登录后的目录刷新会自动增删，且请求前仍须实时核验价格及上游可用性。
+以下表格记录 **2026-10-17** 的 10 个 Zen 免费模型，后续可能变化。仓库的定时 GitHub Action 会更新 `src/zen-snapshot.json`；Magpie 登录后的实时目录刷新也会自动增删，发送请求前仍须核验当前的零价格与模型可用性。因此表格只是历史示例，并非永久固定名单。
 
 | 模型 ID | 接口 |
 | --- | --- |
@@ -87,6 +87,16 @@ Zen 的实时模型 ID 列表是是否开放免费模型的依据；补充目录
 本插件在 Magpie 插件宿主内通过 `fetch` 发请求，不启动外部程序或绕过 TLS 校验。Zen 的聊天、Responses 协议保留现有社区插件的工具与流处理；Kilo 使用 Chat Completions 原样透传。未经测试的输出形式和上游能力不作保证。
 
 2026-10-16 的逐模型实测状态、匿名认证与流式请求结果见 [验证报告](VERIFICATION.md)。
+
+## 自动同步 OpenCode（GitHub Actions）
+
+`.github/workflows/sync-opencode.yml` 每 **6 小时**检查一次，也可在仓库 **Actions → Sync OpenCode upstream → Run workflow** 手动触发。脚本为 `scripts/sync-opencode.mjs`，检查官方 npm 的 OpenCode 1.x / 2.x 版本及 Zen `/models` 和模型定价元数据，并只将**实时确认全部费用为零且协议已知**的模型写入离线快照。没有变更时不提交；上游不可用或价格资料不可信时安全失败，不会覆盖已知目录。
+
+发现变化后，在 `automation/opencode-upstream` 分支创建或更新 PR，先运行 `npm run check`；**默认不自动合并**，需要代码审核。OpenCode 2.x 仅跟踪版本号，不能把 SDK 或请求协议自动“升级”为已兼容。Github Actions 的 `GITHUB_TOKEN` 创建 PR 需要仓库设置中允许 Actions 创建 Pull Requests；`GITHUB_TOKEN` 触发的 PR 可能不会自动启动其他 workflow，因此同步 workflow 自己先运行测试。
+
+**诊断无法调用的模型：** `scripts/diagnose-gateways.mjs` 分别用不含个人 Key 的公开 Zen 与 Kilo 免费访问方式发一个最小请求，打印 HTTP 状态和短错误文本。可以通过 **Actions → Diagnose free gateways → Run workflow** 手动运行，不必在日志中公开任何个人 API Key。诊断结果能区分上游 403 免费层客户端限制、401 身份验证、429 限流、503 目录校验失败等，不代表每种上游模型都可靠。
+
+特别注意，Zen 的免费层可能限制**官方 OpenCode 客户端内的使用**。本仓库是 Magpie 的第三方插件，单纯更新 `opencode/X.Y.Z` 的 User-Agent 或模型目录**不等于获得官方免费推理授权**。如果 Zen 因 `FreeTierError` 返回 403，应尊重服务端限制，改用官方 OpenCode 客户端访问对应免费模型，或在 Magpie 中使用明确允许第三方调用的提供商（例如 Kilo 的公开免费 API）。不要把识别限制视为需要绕过的 bug。
 
 ## 开发与许可
 
