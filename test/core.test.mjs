@@ -14,10 +14,11 @@ test("entry exports two independent provider hooks and Jev decision metadata", a
   assert.equal(kilo.auth.provider, "kilo-free-all");
   assert.equal(config.provider["zen-free-all"].decide, true);
   assert.equal(config.provider["zen-free-all"].models["jev-1.13-free"].decides, true);
-  assert.equal(Object.keys(config.provider["zen-free-all"].models).length, 10);
-  assert.ok(config.provider["zen-free-all"].models["beam-free"]);
-  assert.ok(config.provider["zen-free-all"].models["glm-5.3-flash-free"]);
-  assert.equal(config.provider["zen-free-all"].models["cat-jam-free"], undefined);
+  // The automation refreshes this snapshot; tests must not pin a stale count.
+  assert.equal(Object.keys(config.provider["zen-free-all"].models).length, zenSnapshot.models.length);
+  for (const entry of zenSnapshot.models) {
+    assert.ok(config.provider["zen-free-all"].models[entry.id], entry.id);
+  }
   assert.equal(Object.keys(config.provider["kilo-free-all"].models).length, 17);
 });
 
