@@ -40,10 +40,11 @@ const CORE_PARAMETER = {
   grep: "pattern",
   read: "filePath",
 };
-const OPENCODE_VERSION = "1.19.0";
-// What OpenCode 1.19.0 sends as its User-Agent, ai-sdk and Bun included.
-// Each protocol's ai-sdk package bundles its own provider-utils, so the
-// version differs by protocol (captured from the release binary's requests).
+const OPENCODE_VERSION = "1.19.3";
+// OpenCode 1.x release version. These AI SDK/Bun component versions were
+// observed with 1.19.0 and must be verified against a current binary before
+// being described as an exact fingerprint for a later release. OpenCode 2.x
+// is a separate release line; changing a version string is not a V2 port.
 const PROVIDER_UTILS = { chat: "4.0.23", responses: "4.0.40", anthropic: "4.0.46" };
 export function userAgent(protocol) {
   return `opencode/${OPENCODE_VERSION} ai-sdk/provider-utils/${PROVIDER_UTILS[protocol]} runtime/bun/1.3.14`;
@@ -297,7 +298,7 @@ async function server(_input, options = {}) {
             const toolPolicy = normalizeTools(body, protocol);
             if (protocol === "chat")
               body.stream_options = { ...body.stream_options, include_usage: true };
-            // Only what OpenCode 1.19.0 itself sends to its gateway, so a
+            // Forward the supported OpenCode 1.x request headers, so a
             // caller's own headers (an agent's User-Agent, x-stainless-*,
             // x-session-affinity, ...) never mark the request as not
             // OpenCode's (packages/opencode/src/session/llm/request.ts).
