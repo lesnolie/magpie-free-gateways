@@ -16,23 +16,24 @@ magpie plugin login kilo-free-all
 
 ## OpenCode Zen
 
-2026-10-16 的实时目录列出以下 11 个免费模型。模型 ID 以实时目录为准，列表可变。
+2026-10-17 核对 [OpenCode Console 官方模型目录](https://opencode.ai/v2/docs/console/models/) 和实时 `/inference/v1/models` 后，Zen 目前列出以下 **10 个免费模型**。这是启动时的离线快照，登录后的目录刷新会自动增删，且请求前仍须实时核验价格及上游可用性。
 
 | 模型 ID | 接口 |
 | --- | --- |
 | `big-pickle` | Chat Completions |
-| `cat-jam-free` | Chat Completions |
+| `beam-free` | Chat Completions |
 | `mimo-v2.6-flash-free` | Chat Completions |
-| `muse-spark-1.2-contributor-free` | Responses |
-| `muse-spark-1.3-contributor-free` | Responses |
 | `nemotron-3.5-super-vl-free` | Chat Completions |
 | `nemotron-3.5-lightning-free` | Chat Completions |
 | `jev-1.13-free` | System One 决策 |
 | `longcat-2.5-preview-free` | Chat Completions |
 | `deepseek-v4.1-flash-free` | Chat Completions |
+| `glm-5.3-flash-free` | Chat Completions |
 | `space-bunny-free` | Chat Completions |
 
-Zen 的实时模型目录仍列出 Muse Spark 1.2，虽然补充元数据标为 `deprecated`。本插件以实时目录为准，把这个仍在目录内的免费模型呈给 Magpie；上游若移除它，插件随刷新移除。`big-pickle` 没有 `-free` 后缀，但补充目录确认输入、输出及缓存价格为零，所以允许它。
+本次移除了初始快照中已不在实时目录的 `cat-jam-free`、`muse-spark-1.2-contributor-free` 和 `muse-spark-1.3-contributor-free`，新增 `beam-free`、`glm-5.3-flash-free`。`big-pickle` 无 `-free` 后缀，仍必须在每次目录刷新时获得**明确的零价格证据**才能发起请求。新模型的能力与上下文上限以实时元数据为准，离线快照不代表真实测试结果。
+
+**OpenCode 版本分支：** 2026-10-17 时，OpenCode 1.x 的最新正式版为 `opencode-ai@1.19.3`，OpenCode 2.x 是独立的大版本线（`@opencode/cli@2.0.31`）。本仓库是 **Magpie 供应商插件**，并不是 OpenCode 原生插件，不会安装、升级或自动调用 OpenCode 2。当前发送逻辑沿用经先前验证的 1.x HTTP 请求兼容层；**不能仅凭版本字符串变更就声称 OpenCode 2.x 的全部协议和鉴权路径已通过测试**。Zen 免费接口可能根据客户端身份、能力与工具定义限制访问，请遵守服务条款。若需要正式支持 OpenCode 2，请单独验证其原生插件宿主和 Console API 认证机制。
 
 ### 使用 Jev
 
@@ -79,7 +80,7 @@ Kilo 官方说明免费模型允许匿名访问，按 IP 每小时 200 次请求
 
 已登录供应商的 `provider.models` 钩子被 Magpie 调用时，插件读取实时目录。根据 [Magpie 当前的刷新实现](https://github.com/yetone/magpie/blob/a15e576564cb90d4d027e8b8cb7821472de0a3fc/internal/provider/plugin_relist.go#L22-L67)，运行中的网关约在启动 1 分钟后首次重新读取插件目录，之后每小时读取一次；登录、插件变更或手动刷新也会触发读取。插件缓存 30 秒，用于合并密集的目录查询和推理前核验，**不是每 30 秒主动刷新界面**。自动重列由 [Magpie 网关启动的后台任务](https://github.com/yetone/magpie/blob/a15e576564cb90d4d027e8b8cb7821472de0a3fc/internal/gateway/gateway.go#L560)完成；代理的模型选择器仍受 Magpie 可见模型设置和刷新时机影响。
 
-目录请求超时 8 秒，同时触发的刷新合并为一次请求。成功读取空目录表示当前没有符合条件的免费模型，插件会清空所列模型。请求失败时，Magpie 可继续展示上次列表或仓库内 2026-10-16 的离线快照；**发送推理请求前必须成功读取近期实时目录**。某个模型已移除、变为收费，或目录无法确认时，插件拒绝转发请求。即使 Magpie 保留了已选模型，插件也不会把未经核验的请求发往上游。离线快照只用于启动展示，不作为付费安全判断。
+目录请求超时 8 秒，同时触发的刷新合并为一次请求。成功读取空目录表示当前没有符合条件的免费模型，插件会清空所列模型。请求失败时，Magpie 可继续展示上次列表或仓库内 Zen 2026-10-17 / Kilo 2026-10-16 的离线快照；**发送推理请求前必须成功读取近期实时目录**。某个模型已移除、变为收费，或目录无法确认时，插件拒绝转发请求。即使 Magpie 保留了已选模型，插件也不会把未经核验的请求发往上游。离线快照只用于启动展示，不作为付费安全判断。
 
 Zen 的实时模型 ID 列表是是否开放免费模型的依据；补充目录提供价格、能力、上下文长度和接口协议。带 `-free` 的新普通模型在补充目录暂时不可用时按 Zen 默认的 Chat Completions 接口接入；明确标注其他不支持接口的模型不会错送到聊天接口。新 Jev 模型需有明确的 System One 接口信息才能接入。已确认非零价的模型持续被拒绝，直到补充目录明确恢复零价；`big-pickle` 等无 `-free` 后缀的模型每次刷新都需要当次零价证据。Kilo 同时检查输入、输出、请求、图片、缓存、联网和其他可见收费字段；任一非零就排除。动态列表只代表网关当前声明的免费可用性，**不保证每个上游推理请求都成功**，也不保证未来不变。模型自身的限流、服务错误或接口能力差异仍会影响请求。
 
