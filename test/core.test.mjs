@@ -32,7 +32,7 @@ test("live catalog is authoritative and a charged price excludes a free-looking 
   ] }, { models: {
     "muse-spark-1.2-contributor-free": { status: "deprecated", cost: { input: 0, output: 0 } },
     "paid-free": { cost: { input: 1, output: 0 } },
-  } });
+  } }, { "jev-1.13-free": "systemone" });
   assert.deepEqual(Object.keys(zen), ["muse-spark-1.2-contributor-free", "jev-1.13-free"]);
   assert.equal(zen["muse-spark-1.2-contributor-free"].status, "active");
   assert.equal(zen["jev-1.13-free"].decides, true);
