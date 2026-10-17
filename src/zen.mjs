@@ -63,12 +63,36 @@ function httpURL(value) {
   return url.href.replace(/\/+$/, "");
 }
 
-function requirePublic(auth) {
-  if (auth?.type !== "api" || auth.key !== "public") {
-    throw new Error(
-      "OpenCode Zen Free uses the public credential. Enable its free access login method.",
-    );
+function zenCredential(auth) {
+  if (auth?.type !== "api" || typeof auth.key !== "string" ||
+      !auth.key || auth.key !== auth.key.trim() || /[\r\n]/.test(auth.key)) {
+    throw new Error("Sign in with public or an official OpenCode Console API key.");
   }
+  return { key: auth.key, public: auth.key === "public" };
+}
+
+// A live catalog lists free model IDs, but the Zen server can separately
+// restrict anonymous inference to first-party OpenCode clients. A provider
+// plugin cannot grant or bypass that access. Preserve the HTTP failure and
+// explain the restriction without incorrectly reporting a missing model.
+async function explainFreeTierError(response) {
+  if (response.status !== 403) return response;
+  let raw;
+  try { raw = await response.clone().text(); } catch { return response; }
+  if (!/FreeTierError|free tier can only be used from within OpenCode/i.test(raw)) return response;
+  return new Response(JSON.stringify({
+    type: "error",
+    error: {
+      type: "FreeTierError",
+      message: "OpenCode Zen refused this free-tier request because it is not authorized from this client. " +
+        "Magpie is a third-party app; updating a plugin or changing a User-Agent cannot grant access. " +
+        "Use the official OpenCode app for its free tier, or try an official Console API key " +
+        "for API access where permitted (billing and model restrictions may apply).",
+    },
+  }), {
+    status: 403,
+    headers: { "content-type": "application/json", "x-magpie-sign-in": "kept" },
+  });
 }
 
 function normalizeTools(body, protocol) {
@@ -236,16 +260,21 @@ async function server(_input, options = {}) {
             return { type: "success", key: "public" };
           },
         },
+        {
+          type: "api",
+          label: "官方 Console API Key（第三方客户端，可能计费）",
+          placeholder: "OpenCode Console API key",
+        },
       ],
       async loader(getAuth) {
         const auth = await getAuth();
         if (!auth) return {};
-        requirePublic(auth);
+        const credential = zenCredential(auth);
         return {
           baseURL,
-          apiKey: "public",
+          apiKey: credential.key,
           async fetch(input, init) {
-            requirePublic(await getAuth());
+            const account = zenCredential(await getAuth());
             const request = new Request(input, init);
             const protocol = Object.keys(PATHS).find(
               (key) => request.url === `${baseURL}${PATHS[key]}`,
@@ -279,13 +308,14 @@ async function server(_input, options = {}) {
                   typeof body.questions !== "object" || Array.isArray(body.questions))
                 return new Response(JSON.stringify({ error: { message: "Jev requires state and a questions object" } }),
                   { status: 400, headers: { "content-type": "application/json" } });
-              return fetchImpl(UPSTREAM.systemone, {
+              const response = await fetchImpl(UPSTREAM.systemone, {
                 method: "POST",
-                headers: { authorization: "Bearer public", "content-type": "application/json" },
+                headers: { authorization: `Bearer ${account.key}`, "content-type": "application/json" },
                 body: JSON.stringify(body),
                 signal: request.signal,
                 redirect: "error",
               });
+              return explainFreeTierError(response);
             }
             if (model.decides) throw new Error("Jev is a System One classifier, not a chat model");
             if (model.api.npm !== SDK[protocol]) {
@@ -308,21 +338,26 @@ async function server(_input, options = {}) {
             const headers = new Headers({
               "content-type": "application/json",
               accept: "*/*",
-              "user-agent": userAgent(protocol),
-              "x-opencode-project":
-                given.get("x-opencode-project") ||
-                (project?.vcs === "git" && project.id ? project.id : "global"),
-              "x-opencode-session": session,
-              "x-opencode-request": opencodeID("msg", false),
-              "x-opencode-client": "cli",
-              "x-opencode-session-id": session,
+              "user-agent": account.public ? userAgent(protocol) : "magpie-free-gateways/0.1.4",
             });
+            // Preserve the historical public adapter for existing installs.
+            // A genuine Console API key is instead sent as a third-party
+            // client without claiming to be the official OpenCode CLI.
+            if (account.public) {
+              headers.set("x-opencode-project",
+                given.get("x-opencode-project") ||
+                (project?.vcs === "git" && project.id ? project.id : "global"));
+              headers.set("x-opencode-session", session);
+              headers.set("x-opencode-request", opencodeID("msg", false));
+              headers.set("x-opencode-client", "cli");
+              headers.set("x-opencode-session-id", session);
+            }
             if (protocol === "anthropic") {
-              headers.set("x-api-key", "public");
+              headers.set("x-api-key", account.key);
               headers.set("anthropic-version", given.get("anthropic-version") || "2023-06-01");
               if (given.get("anthropic-beta")) headers.set("anthropic-beta", given.get("anthropic-beta"));
             } else {
-              headers.set("authorization", "Bearer public");
+              headers.set("authorization", `Bearer ${account.key}`);
             }
             const response = await fetchImpl(UPSTREAM[protocol], {
               method: "POST",
@@ -331,7 +366,9 @@ async function server(_input, options = {}) {
               signal: request.signal,
               redirect: "error",
             });
-            const guarded = await guardToolResponse(response, protocol, toolPolicy, {
+            const checked = await explainFreeTierError(response);
+            if (!checked.ok) return checked;
+            const guarded = await guardToolResponse(checked, protocol, toolPolicy, {
               endCutShort: streaming,
             });
             return streaming ? guarded : collapseResponse(guarded, protocol);
@@ -346,7 +383,7 @@ async function server(_input, options = {}) {
       id: PROVIDER,
       async models(provider, { auth } = {}) {
         if (!auth) return provider.models;
-        requirePublic(auth);
+        zenCredential(auth);
         return discovery.forDisplay();
       },
     },
