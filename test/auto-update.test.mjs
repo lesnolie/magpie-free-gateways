@@ -28,7 +28,7 @@ test("Zen hooks add, remove and reprice live models; stale prices cannot authori
           .map((id) => [id, { ...(costs[id] ? { cost: costs[id] } : {}), ...otherMetadata[id] }])),
       } });
     }
-    if (!init.method && url.endsWith("models.mdx")) throw new Error("docs offline");
+    if (!init.method && url.endsWith("models.mdx")) return new Response("| Jev | jev-1.13-free | `https://opencode.ai/inference/systemone/v1/systemone` | - |\n");
     posts.push(url);
     throw new Error("posted to upstream");
   };
