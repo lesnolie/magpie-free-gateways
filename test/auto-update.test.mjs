@@ -10,7 +10,8 @@ test("Zen hooks add, remove and reprice live models; stale prices cannot authori
   let clock = 0;
   let listing = ["jev-1.13-free", "muse-spark-1.3-contributor-free", "big-pickle"];
   let costs = { "big-pickle": zero };
-  let otherMetadata = {};
+  // Synthetic Responses fixture; the model is no longer in the live catalog.
+  let otherMetadata = { "muse-spark-1.3-contributor-free": { provider: { npm: "@ai-sdk/openai" } } };
   let listingFails = false;
   let metadataFails = false;
   const posts = [];
