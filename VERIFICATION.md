@@ -53,3 +53,9 @@
 2026-10-16 使用可变的模拟上游和可控时钟，沿两个真实 `provider.models` 钩子及 `loader.fetch` 路径验证：新免费模型自动出现，移除与转收费后被拒绝；成功空目录清空列表；目录失败可回退展示但拒绝推理。Zen 补充元数据失败时，新普通 `-free` 模型仍可走默认 Chat Completions；明确的其他 SDK 和未知 Jev 不会错路由。已确认收费的模型即使后来元数据请求失败或成功响应漏掉该 ID，仍须等明确零价记录才恢复；无免费后缀模型不会沿用旧零价。`npm test` 共 10 项通过。
 
 自动重列时机依据 Magpie 官方源码提交 [`a15e576`](https://github.com/yetone/magpie/commit/a15e576564cb90d4d027e8b8cb7821472de0a3fc)：[首次约 1 分钟、随后每小时](https://github.com/yetone/magpie/blob/a15e576564cb90d4d027e8b8cb7821472de0a3fc/internal/provider/plugin_relist.go#L22-L67)，由[网关后台任务](https://github.com/yetone/magpie/blob/a15e576564cb90d4d027e8b8cb7821472de0a3fc/internal/gateway/gateway.go#L560)执行。本次没有重跑 0.1.0 的逐模型在线请求；本节为本地端到端模拟验证，在线服务的即时状态未重新验证。
+
+## 2026-10-17 OpenCode 版本与目录同步
+
+上游发布：OpenCode 1.x `1.19.3`（`opencode-ai`）及独立的 OpenCode 2.x（`@opencode/cli`）。本项目仍是 Magpie 插件，不是 OpenCode 2 原生插件。
+
+对照 2026-10-17 OpenCode Console 文档和 `https://opencode.ai/inference/v1/models` 的实时 JSON，Zen 离线展示快照改为 10 个实时列出的免费 ID（新增 `beam-free` 和 `glm-5.3-flash-free`，移除 `cat-jam-free`、`muse-spark-1.2-contributor-free` 和 `muse-spark-1.3-contributor-free`）。新增嵌套收费档位检查，避免只核对主输入/输出费用就误把高上下文档识别为免费。此次目录同步并非全部模型的在线推理验收，2026-10-16 的逐模型 HTTP 结果仅代表当日环境，不能外推至新版或新模型。
