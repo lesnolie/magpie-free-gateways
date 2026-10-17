@@ -95,18 +95,21 @@ async function explainFreeTierError(response) {
   });
 }
 
-function normalizeTools(body, protocol) {
+function normalizeTools(body, protocol, injectUnavailable = true) {
   if (body.tools !== undefined && !Array.isArray(body.tools)) {
     throw new Error("tools must be an array");
   }
-  body.tools ??= [];
+  if (injectUnavailable) body.tools ??= [];
   const present = new Set(
-    body.tools.map((tool) => (protocol === "chat" ? tool?.function?.name : tool?.name)),
+    (body.tools ?? []).map((tool) => (protocol === "chat" ? tool?.function?.name : tool?.name)),
   );
   const declared = new Set([...present].filter((name) => typeof name === "string"));
   if (protocol === "chat" && Array.isArray(body.functions)) {
     for (const tool of body.functions) if (typeof tool?.name === "string") declared.add(tool.name);
   }
+  // Only the historical anonymous adapter requires its old tool stubs.
+  // Real Console API-key requests must preserve the agent's actual tools.
+  if (!injectUnavailable) return { declared };
   for (const name of CORE_TOOLS) {
     if (present.has(name)) continue;
     const parameters = {
@@ -329,7 +332,7 @@ async function server(_input, options = {}) {
             }
             const streaming = body.stream === true;
             body.stream = true;
-            const toolPolicy = normalizeTools(body, protocol);
+            const toolPolicy = normalizeTools(body, protocol, account.public);
             if (protocol === "chat")
               body.stream_options = { ...body.stream_options, include_usage: true };
             // Forward the supported OpenCode 1.x request headers, so a
