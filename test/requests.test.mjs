@@ -101,3 +101,63 @@ test("concurrent catalog refreshes coalesce and a TTL expiry refreshes again", a
   await discovery.requireModel("free");
   assert.equal(calls, 2);
 });
+
+test("official Console API key can authenticate via third-party Magpie provider", async () => {
+  const calls = [];
+  const hooks = await ZenFreeAllPlugin({}, { fetchImpl: zenFetch(calls) });
+  assert.equal(hooks.auth.methods.length, 2);
+  const auth = { type: "api", key: "sk-console-example-key" };
+  const loader = await hooks.auth.loader(async () => auth);
+  assert.equal(loader.apiKey, auth.key);
+  assert.ok((await hooks.provider.models({}, { auth }))["big-pickle"]);
+  for (const [endpoint, payload] of [
+    ["chat/completions", { model: "big-pickle", messages: [{ role: "user", content: "hi" }] }],
+    ["responses", { model: "muse-spark-1.3-contributor-free", input: "hi" }],
+    ["systemone", { model: "jev-1.13-free", state: "hi",
+      questions: { ok: { type: "noul", instructions: "Is this a greeting?" } } }],
+  ]) {
+    await assert.rejects(loader.fetch("https://opencode.ai/inference/v1/" + endpoint, {
+      method: "POST", body: JSON.stringify(payload),
+    }), /sent upstream/);
+  }
+  assert.equal(calls.length, 3);
+  for (const call of calls) {
+    if (new URL(call.url).pathname.endsWith("/chat/completions") ||
+        new URL(call.url).pathname.endsWith("/responses")) {
+      const body = JSON.parse(call.init.body);
+      assert.equal(body.tools, undefined, "no fabricated CLI tool definitions with Console API key");
+    }
+    const h = new Headers(call.init.headers);
+    assert.equal(h.has("x-api-key") ? h.get("x-api-key") : h.get("authorization"),
+      h.has("x-api-key") ? auth.key : "Bearer " + auth.key);
+    assert.equal(h.get("user-agent"), "magpie-free-gateways/0.1.4");
+    assert.equal(h.has("x-opencode-client"), false);
+  }
+});
+
+test("Zen FreeTierError is explained without masking the upstream access refusal", async () => {
+  const auth = { type: "api", key: "public" };
+  const fetchImpl = async (url, init = {}) => {
+    if (!init.method && url.endsWith("/models")) return Response.json(zenList);
+    if (!init.method && url.endsWith("api.json")) return Response.json(zenMetadata);
+    if (!init.method && url.endsWith("models.mdx")) return new Response(docs);
+    return new Response(JSON.stringify({
+      type: "error", error: {
+        type: "FreeTierError",
+        message: "OpenCode's free tier can only be used from within OpenCode",
+      },
+    }), { status: 403, headers: { "content-type": "application/json" } });
+  };
+  const hooks = await ZenFreeAllPlugin({}, { fetchImpl });
+  const loader = await hooks.auth.loader(async () => auth);
+  const reply = await loader.fetch("https://opencode.ai/inference/v1/chat/completions", {
+    method: "POST", body: JSON.stringify({ model: "big-pickle",
+      messages: [{ role: "user", content: "hi" }] }),
+  });
+  assert.equal(reply.status, 403);
+  assert.equal(reply.headers.get("x-magpie-sign-in"), "kept");
+  const error = await reply.json();
+  assert.equal(error.error.type, "FreeTierError");
+  assert.match(error.error.message, /official OpenCode app/);
+  assert.match(error.error.message, /Console API key/);
+});
