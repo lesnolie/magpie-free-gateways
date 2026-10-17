@@ -71,9 +71,20 @@ export function isZeroPricing(pricing) {
   return Object.entries(pricing).every(([key, value]) => key === "discount" || zeroNumber(value));
 }
 
+function allZeroCostFields(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const fields = Object.values(value);
+    return fields.length > 0 && fields.every(allZeroCostFields);
+  }
+  return zeroNumber(value);
+}
+
 export function zenZeroCost(cost) {
   if (!cost || !zeroNumber(cost.input) || !zeroNumber(cost.output)) return false;
-  return Object.values(cost).every((value) => zeroNumber(value));
+  // Newer catalogs can express extended-context costs as nested objects.
+  // All tiers and cache rates must be explicitly zero: never infer "free"
+  // from the main input/output price alone.
+  return allZeroCostFields(cost);
 }
 
 export function buildZenModels(listing, metadata = {}, protocols = {}, baseURL = ZEN_BASE, blockedIDs = new Set()) {
