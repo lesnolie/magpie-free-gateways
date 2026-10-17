@@ -51,7 +51,8 @@ export function buildSnapshot({ listing, metadata, docs = "", old, date }) {
     const data = metadata.opencode.models[id];
     if (!data || !zenZeroCost(data.cost)) continue;
     const previous = former[id];
-    const protocol = documented[id] ?? (data.provider?.npm ? sdks[data.provider.npm] : previous?.protocol);
+    const sdk = data.provider?.npm ?? metadata.opencode.npm;
+    const protocol = documented[id] ?? (sdk ? sdks[sdk] : previous?.protocol);
     if (!["chat", "responses", "anthropic", "systemone"].includes(protocol)) continue;
     if (id.startsWith("jev-") && protocol !== "systemone") continue;
     const modalities = (key) => {
