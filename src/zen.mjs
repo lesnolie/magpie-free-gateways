@@ -310,7 +310,11 @@ async function server(_input, options = {}) {
                   { status: 400, headers: { "content-type": "application/json" } });
               const response = await fetchImpl(UPSTREAM.systemone, {
                 method: "POST",
-                headers: { authorization: `Bearer ${account.key}`, "content-type": "application/json" },
+                headers: {
+                  authorization: `Bearer ${account.key}`,
+                  "content-type": "application/json",
+                  ...(!account.public ? { "user-agent": "magpie-free-gateways/0.1.4" } : {}),
+                },
                 body: JSON.stringify(body),
                 signal: request.signal,
                 redirect: "error",
