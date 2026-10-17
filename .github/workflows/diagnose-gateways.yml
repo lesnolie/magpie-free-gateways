@@ -19,7 +19,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Test live OpenCode synchronization without writing
-        run: node scripts/sync-opencode.mjs --check
+      - name: Test live OpenCode synchronization and generated changes
+        run: |
+          node scripts/sync-opencode.mjs
+          npm run check
+          git diff --stat
       - name: Probe two no-key free models and classify errors
         run: node scripts/diagnose-gateways.mjs
