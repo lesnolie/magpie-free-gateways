@@ -1,6 +1,6 @@
 import { ZenFreeAllPlugin, KiloFreeAllPlugin } from "../index.mjs";
 
-async function probe(name, plugin, auth, url, model, streaming = false) {
+async function probe(name, plugin, auth, url, model, streaming = false, magpieTiny = false) {
   try {
     const hooks = await plugin({}, { ttlMs: 0 });
     const loader = await hooks.auth.loader(async () => auth);
@@ -9,8 +9,8 @@ async function probe(name, plugin, auth, url, model, streaming = false) {
       signal: AbortSignal.timeout(40000),
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        model, messages: [{ role: "user", content: "Respond with OK." }],
-        max_tokens: 512, stream: streaming,
+        model, messages: [{ role: "user", content: magpieTiny ? "hi" : "Respond with OK." }],
+        max_tokens: magpieTiny ? 16 : 512, stream: streaming,
       }),
     });
     const raw = await response.text();
@@ -34,7 +34,7 @@ async function probe(name, plugin, auth, url, model, streaming = false) {
     else if (response.ok) reason = visible ? "HTTP success with visible model output" : "HTTP success, but no visible model output";
     console.log(JSON.stringify({
       provider: name, model, status: response.status, diagnosis: reason,
-      visible, streaming, response: raw.slice(0, 600).replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]"),
+      visible, streaming, magpieTiny, response: raw.slice(0, 600).replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]"),
     }));
   } catch (error) {
     console.log(JSON.stringify({ provider: name, model, error: String(error).slice(0, 300) }));
@@ -48,3 +48,9 @@ await probe("Zen-stream", ZenFreeAllPlugin, { type: "api", key: "public" },
 await probe("Kilo", KiloFreeAllPlugin,
   { type: "api", key: "anonymous", metadata: { mode: "anonymous" } },
   "https://ai-gateway.kilo.ai/api/v1/chat/completions", "kilo-auto/free");
+
+await probe("Magpie-test-Zen", ZenFreeAllPlugin, { type: "api", key: "public" },
+  "https://opencode.ai/inference/v1/chat/completions", "deepseek-v4.1-flash-free", true, true);
+await probe("Magpie-test-Kilo", KiloFreeAllPlugin,
+  { type: "api", key: "anonymous", metadata: { mode: "anonymous" } },
+  "https://ai-gateway.kilo.ai/api/v1/chat/completions", "kilo-auto/free", true, true);
