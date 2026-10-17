@@ -10,7 +10,7 @@ magpie plugin login zen-free-all
 magpie plugin login kilo-free-all
 ```
 
-也可下载仓库后运行 `magpie plugin add ./magpie-free-gateways`。Zen 登录界面填 `public`，插件只接受公开凭据。Kilo 选择“匿名免费访问”并填 `anonymous`；插件不会把这个占位值发给 Kilo。Kilo 也可选择自己的 API Key，插件只允许实时目录中所有价格字段为零的模型通过。密钥由 Magpie 管理，插件不写入日志。
+也可下载仓库后运行 `magpie plugin add ./magpie-free-gateways`。Zen 可以选择匿名 `public`，或使用自己从 [OpenCode Console](https://opencode.ai/console) 获取的正式 API Key（是否允许免费模型、是否计费均由官方接口决定）；匿名免费模型的目录可显示，并**不代表 Magpie 有权调用**。若服务端返回 `FreeTierError`（只能在 OpenCode 中使用），插件会明确提示官方客户端限制，而不会尝试绕过。Kilo 选择“匿名免费访问”并填 `anonymous`；插件不会把这个占位值发给 Kilo。Kilo 也可选择自己的 API Key，插件只允许实时目录中所有价格字段为零的模型通过。密钥由 Magpie 管理，插件不写入日志。
 
 两个供应商分别是 `zen-free-all/<模型 ID>` 和 `kilo-free-all/<模型 ID>`。它们不会覆盖已有的 `opencode-zen-free` 供应商。安装后可用 `magpie plugin --json` 查看加载状态、模型和登录方式；模型是否显示在某个代理的选择器中，还取决于该代理在 Magpie 的可见模型设置。
 
@@ -34,6 +34,15 @@ magpie plugin login kilo-free-all
 本次移除了初始快照中已不在实时目录的 `cat-jam-free`、`muse-spark-1.2-contributor-free` 和 `muse-spark-1.3-contributor-free`，新增 `beam-free`、`glm-5.3-flash-free`。`big-pickle` 无 `-free` 后缀，仍必须在每次目录刷新时获得**明确的零价格证据**才能发起请求。新模型的能力与上下文上限以实时元数据为准，离线快照不代表真实测试结果。
 
 **OpenCode 版本分支：** 2026-10-17 时，OpenCode 1.x 的最新正式版为 `opencode-ai@1.19.3`，OpenCode 2.x 是独立的大版本线（`@opencode/cli@2.0.31`）。本仓库是 **Magpie 供应商插件**，并不是 OpenCode 原生插件，不会安装、升级或自动调用 OpenCode 2。当前发送逻辑沿用经先前验证的 1.x HTTP 请求兼容层；**不能仅凭版本字符串变更就声称 OpenCode 2.x 的全部协议和鉴权路径已通过测试**。Zen 免费接口可能根据客户端身份、能力与工具定义限制访问，请遵守服务条款。若需要正式支持 OpenCode 2，请单独验证其原生插件宿主和 Console API 认证机制。
+
+
+### Zen 免费层限制与正式 API Key
+
+如果在 Magpie「检测模型」或 Agent 请求中出现 `OpenCode's free tier can only be used from within OpenCode`，这是 OpenCode 网关返回的 **HTTP 403 `FreeTierError`**，不属于模型没有同步。此限制由服务端决定；更换请求头、更新本插件或把 User-Agent 改为最新 OpenCode 并不等同于获得访问权限。
+
+合法选项：使用真正的 OpenCode 客户端调用它允许的匿名免费模型；若要在 Magpie 中使用官方 Console API，请在此插件的 Zen 登录中选择 **官方 Console API Key**，由 Magpie 存储你的 Key，插件只发往 OpenCode Console 的推理端点。官方文档说明 Console API 可用于第三方编码代理，但**正式 Key 也不能保证每个免费模型允许第三方使用**，并可能依据账户或请求产生费用。插件依然只列出实时确认零标价的模型，转发前再次校验目录。若拒绝继续发生，应使用官方客户端或改用 Kilo 等允许外部 API 调用的网关；不要绕过访问控制。
+
+此模式可与匿名 `public` 模式共存，但切换/新增登录需要在 Magpie 内选择对应方式。原有 `public` 登录不会自动变成正式 API Key。没有已授权的 Console API Key 时，本仓库无法保证 Zen 免费模型在 Magpie 中可用。
 
 ### 使用 Jev
 
