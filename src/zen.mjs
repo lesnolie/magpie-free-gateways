@@ -229,7 +229,7 @@ async function server(_input, options = {}) {
       methods: [
         {
           type: "api",
-          label: "Zen public 免费访问（代理出口 IP 可能封禁，请直连）",
+          label: "Zen public 免费访问（IP 额度用完会提示“不能在第三方使用”，可分流轮询 IP）",
           placeholder: "public",
           async authorize() {
             return { type: "success", key: "public" };
